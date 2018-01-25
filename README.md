@@ -1,5 +1,11 @@
 # Slack duty bot
 
+### How usage
+1. Create new custom integration `Outgoing WebHooks` (e.g https://{team}.slack.com/apps/manage/custom-integrations)
+2. Build for your environment
+3. Add a schedule for the attendants 
+3. Run with the required parameters
+
 ### Build package
 ```
 env GOOS=linux GOARCH=amd64 go get -v -d ./src/slack-duty-bot
@@ -11,8 +17,8 @@ env GOOS=linux GOARCH=amd64 go build -o ./bin/slack-duty-bot ./src/slack-duty-bo
 token: %some-token%
 log: /var/log/slack-duty-bot.log
 ids:
-  username.one: U1LGZZZZZ
-  username.two: U17VZZZZZ
+  username.one: U11GZZZZZ
+  username.two: U11VZZZZZ
 duties:
   - [username.one, username.two] # Sunday
   - [username.one] # Monday
