@@ -1,4 +1,6 @@
 # Slack duty bot
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Go Report Card](https://goreportcard.com/badge/github.com/iqoption/slack-duty-bot)](https://goreportcard.com/report/github.com/iqoption/slack-duty-bot)
 
 ### How usage
 1. Create new custom integration `Outgoing WebHooks` (e.g https://{team}.slack.com/apps/manage/custom-integrations)
@@ -13,7 +15,7 @@ env GOOS=linux GOARCH=amd64 go build -o ./bin/slack-duty-bot ./src/slack-duty-bo
 ```
 
 ### Config
-```
+```yaml
 token: %some-token%
 log: /var/log/slack-duty-bot.log
 ids:
