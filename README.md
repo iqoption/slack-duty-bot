@@ -9,9 +9,9 @@
 3. Run with the required parameters
 
 ### Build package
-```
-env GOOS=linux GOARCH=amd64 go get -v -d ./src/slack-duty-bot
-env GOOS=linux GOARCH=amd64 go build -o ./bin/slack-duty-bot ./src/slack-duty-bot/main.go
+```bash
+$ env GOOS=linux GOARCH=amd64 go get -v -d ./src/slack-duty-bot
+$ env GOOS=linux GOARCH=amd64 go build -o ./bin/slack-duty-bot ./src/slack-duty-bot/main.go
 ```
 
 ### Config
