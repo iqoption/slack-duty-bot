@@ -3,24 +3,58 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/iqoption/slack-duty-bot)](https://goreportcard.com/report/github.com/iqoption/slack-duty-bot)
 
 ### How usage
-1. Create new custom integration `Outgoing WebHooks` (e.g https://{team}.slack.com/apps/manage/custom-integrations)
+1. Create new custom integration `Bots` (e.g https://{team}.slack.com/apps/manage/custom-integrations)
 2. Build for your environment
-3. Add a schedule for the attendants 
+3. Prepare config.yaml with duties list
 3. Run with the required parameters
 
-### Build package
-```
-env GOOS=linux GOARCH=amd64 go get -v -d ./src/slack-duty-bot
-env GOOS=linux GOARCH=amd64 go build -o ./bin/slack-duty-bot ./src/slack-duty-bot/main.go
+```bash
+SDB_SLACK_TOKEN=your-token-here ./slack-duty-bot \
+    --slack.keywords keyword-1 \
+    --slack.keywords keyword-2 \
+    --slack.group.id your-group-id \
+    --slack.group.name your-group-name
 ```
 
-### Config
+### Build package
+Build
+```bash
+go get -u github.com/golang/dep/cmd/dep
+dep ensure
+env GOOS=linux GOARCH=amd64 go build -v
+```
+Build via makefile
+```bash
+make BUILD_OS=linux BUILD_ARCH=amd64
+```
+Build in docker
+```bash
+docker run --rm -v $(pwd):/go/src/slack-duty-bot -w /go/src/slack-duty-bot golang:1.10 make BUILD_OS=linux BUILD_ARCH=amd64
+```
+
+### Configuration flags, environment variables
+Environment variables are prefixed with `SDB_` and *MUST* be uppercase with `_` delimiter
+Available variables:
+* `SDB_CONFIG_PATH`
+* `SDB_SLACK_TOKEN`
+* `SDB_SLACK_GROUP_ID`
+* `SDB_SLACK_GROUP_NAME`
+* `SDB_SLACK_THREADS`
+
+Every environment variable can be overwritten by startup flags
+Available flags:
+* `--config.path` - path to yml config (default: . and $HOME/.slack-duty-bot)
+* `--slack.token` - Slack API client token
+* `--slack.keywords` - Case insensitive keywords to search in message text, can be set multiple times (default: [])
+* `--slack.group.name` - Slack user group name, to mention in channel if duty list is empty
+* `--slack.group.id` - Slack user group ID, to mention in channel if duty list is empty
+* `--slack.threads` - Case insensitive keywords to search in message text, can be set multiple times (default: true) 
+
+You can get IDS from api or just use [testing page](https://api.slack.com/methods/usergroups.list/test)
+
+### Configuration file
+Configuration file *MUST* contain `duties` key with *7* slices of Slack username
 ```yaml
-token: %some-token%
-log: /var/log/slack-duty-bot.log
-ids:
-  username.one: U11GZZZZZ
-  username.two: U11VZZZZZ
 duties:
   - [username.one, username.two] # Sunday
   - [username.one] # Monday
@@ -31,8 +65,5 @@ duties:
   - [username.one, username.two] # Saturday
 ```
 
-### Available arguments
-* `--port` - bot http listen port (default: 8003)
-* `--config` - path to yml config (default: /var/slack-bot/config.yml)
-* `--period` - period in seconds after which the config will be updated (default: 5)
-* `--restore` - enable restore previous stable config version process
+### Changelog
+1.0.0

@@ -1,0 +1,153 @@
+package main
+
+import (
+	"fmt"
+	"github.com/fsnotify/fsnotify"
+	"github.com/nlopes/slack"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+	"strings"
+	"time"
+)
+
+const (
+	incomingErrorRetry = 100
+)
+
+func init() {
+	viper.SetEnvPrefix("SDB")
+
+	pflag.String("config.path", "", "Config path")
+	pflag.String("slack.token", "", "Slack API client token config")
+	pflag.String("slack.group.name", "", "Slack group ID for calling in fallback mode")
+	pflag.String("slack.group.id", "", "Slack group name for calling in fallback mode")
+	pflag.StringSlice("slack.keywords", []string{}, "Slack keywords to lister")
+	pflag.Bool("slack.threads", true, "Usage of Slack threads to reply on messages")
+	viper.BindPFlags(pflag.CommandLine)
+
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
+	viper.BindEnv("config.path")
+	viper.BindEnv("slack.token")
+	viper.BindEnv("slack.group.id")
+	viper.BindEnv("slack.group.name")
+	viper.BindEnv("slack.threads")
+
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("$HOME/.slack-duty-bot")
+	viper.AddConfigPath(".")
+
+	viper.SetDefault("config.path", "/etc/slack-duty-bot")
+
+	log.SetFormatter(&log.TextFormatter{DisableColors: true})
+	log.SetLevel(log.DebugLevel)
+}
+
+func main() {
+	pflag.Parse()
+	viper.ReadInConfig()
+
+	if viper.GetString("slack.token") == "" {
+		log.Fatalln("Parameter slack.token is required")
+	}
+	if len(viper.GetStringSlice("slack.keywords")) == 0 {
+		log.Fatalln("Parameter slack.keywords is required")
+	}
+	if viper.GetString("config.path") != "" {
+		viper.AddConfigPath(viper.GetString("config.path"))
+	}
+
+	viper.WatchConfig()
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		log.Infoln("Config file was changed")
+	})
+
+	var (
+		client = slack.New(viper.GetString("slack.token"))
+		rtm    = client.NewRTM()
+	)
+
+	go rtm.ManageConnection()
+	log.Infoln("Send request for RTM connection")
+
+	var incomingErrorCount = 0
+	for packet := range rtm.IncomingEvents {
+		log.Printf("Incoming event with type %s", packet.Type)
+		switch event := packet.Data.(type) {
+		case *slack.IncomingEventError:
+			incomingErrorCount++
+			if incomingErrorCount >= incomingErrorRetry {
+				log.Fatalf("Reached error reconnect limit %d, terminate", incomingErrorRetry)
+			}
+		case *slack.ConnectedEvent:
+			log.Infoln("RTM connection established")
+		case *slack.MessageEvent:
+			log.Printf("Incoming message event")
+			if err := handleMessageEvent(rtm, event); err != nil {
+				log.Warningf("Handle message event error: %v", err)
+			}
+		}
+	}
+}
+
+func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
+	// check text
+	if event.Text == "" {
+		return fmt.Errorf("incoming message with empty text")
+	}
+	// check keywords
+	var keywords = viper.GetStringSlice("slack.keywords")
+	contains := any(keywords, func(keyword string) bool {
+		return strings.Contains(strings.ToLower(event.Text), strings.ToLower(keyword))
+	})
+	if contains == false {
+		return fmt.Errorf("incoming message text '%s' does not contain any suitable keywords (%s)", event.Text, strings.Join(keywords, ", "))
+	}
+	log.Infof("Incoming message text: %s", event.Text)
+	// collection user ids for make duties list
+	var userIds = make(map[string]string, 0)
+	users, err := rtm.Client.GetUsers()
+	if err != nil {
+		log.Warningf("Failed to get users list from Slack API: %v", err)
+	}
+	if users != nil {
+		for _, user := range users {
+			userIds[user.Name] = user.ID
+		}
+	}
+	var (
+		config = struct {
+			Duties [][]string // we need this hack cause viper cannot resolve slice of slice
+		}{}
+		duties []string
+	)
+	viper.Unmarshal(&config)
+	for _, username := range config.Duties[int(time.Now().Weekday())] {
+		userId, ok := userIds[username]
+		if !ok {
+			log.Warningf("Failed to get user id by username %s", username)
+		}
+		duties = append(duties, fmt.Sprintf("<@%s|%s>", userId, username))
+	}
+	if len(duties) == 0 && viper.GetString("slack.group.id") != "" && viper.GetString("slack.group.name") != "" {
+		duties = append(duties, fmt.Sprintf("<!subteam^%s|@%s>", viper.GetString("slack.group.id"), viper.GetString("slack.group.name")))
+	}
+	// send message
+	var outgoing = rtm.NewOutgoingMessage(strings.Join(duties, ", "), event.Channel)
+	if viper.GetBool("slack.threads") == true {
+		outgoing.ThreadTimestamp = event.Timestamp
+	}
+	log.Infof("Outgoing message: %+v", outgoing)
+	rtm.SendMessage(outgoing)
+	return nil
+}
+
+func any(vs []string, f func(string) bool) bool {
+	for _, v := range vs {
+		if f(v) {
+			return true
+		}
+	}
+	return false
+}
