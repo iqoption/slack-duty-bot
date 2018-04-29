@@ -1,0 +1,4 @@
+*.md
+Gopkg*
+Makefile
+LICENSE

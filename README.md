@@ -45,10 +45,10 @@ Every environment variable can be overwritten by startup flags
 Available flags:
 * `--config.path` - path to yml config (default: . and $HOME/.slack-duty-bot)
 * `--slack.token` - Slack API client token
-* `--slack.keywords` - Case insensitive keywords to search in message text, can be set multiple times (default: [])
+* `--slack.keyword` - Case insensitive keywords slice to search in message text, can be set multiple times (default: [])
 * `--slack.group.name` - Slack user group name, to mention in channel if duty list is empty
 * `--slack.group.id` - Slack user group ID, to mention in channel if duty list is empty
-* `--slack.threads` - Case insensitive keywords to search in message text, can be set multiple times (default: true) 
+* `--slack.threads` - Use threads as reply target or push message direct to channel (default: true) 
 
 You can get IDS from api or just use [testing page](https://api.slack.com/methods/usergroups.list/test)
 
