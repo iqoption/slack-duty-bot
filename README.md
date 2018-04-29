@@ -64,6 +64,3 @@ duties:
   - [username.one] # Friday
   - [username.one, username.two] # Saturday
 ```
-
-### Changelog
-1.0.0
