@@ -17,6 +17,22 @@ SDB_SLACK_TOKEN=your-token-here ./slack-duty-bot \
     --slack.group.name your-group-name
 ```
 
+You also can run in application in docker
+```bash
+docker run \
+    --name slack-duty-bot \
+    --restart on-failure \
+    -v $(pwd)/config:/etc/slack-duty-bot \
+    -e SDB_SLACK_TOKEN=your-token-here \
+    -d \
+    insidieux/slack-duty-bot:1.0.0 \
+    --config.path=/etc/slack-duty-bot \
+    --slack.keyword keyword-1 \
+    --slack.keyword keyword-2
+    --slack.group.id your-group-id \
+    --slack.group.name your-group-name \
+```
+
 ### Build package
 Build
 ```bash
