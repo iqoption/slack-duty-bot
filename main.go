@@ -16,8 +16,6 @@ const (
 )
 
 func init() {
-	viper.SetEnvPrefix("SDB")
-
 	pflag.String("config.path", "", "Config path")
 	pflag.String("slack.token", "", "Slack API client token config")
 	// We need ID and name only because bot users can't read user groups info via api
@@ -28,19 +26,16 @@ func init() {
 	viper.BindPFlags(pflag.CommandLine)
 
 	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
-	viper.BindEnv("config.path")
-	viper.BindEnv("slack.token")
-	viper.BindEnv("slack.keyword")
-	viper.BindEnv("slack.group.id")
-	viper.BindEnv("slack.group.name")
-	viper.BindEnv("slack.threads")
+	viper.SetEnvPrefix("SDB")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", ".", "_", "_"))
+	viper.BindEnv("slack_token")
+	viper.BindEnv("slack_group_id")
+	viper.BindEnv("slack_group_name")
+	viper.BindEnv("slack_threads")
 
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("$HOME/.slack-duty-bot")
 	viper.AddConfigPath(".")
-
-	viper.SetDefault("config.path", "/etc/slack-duty-bot")
 
 	log.SetFormatter(&log.TextFormatter{DisableColors: true})
 	log.SetLevel(log.DebugLevel)
@@ -48,7 +43,13 @@ func init() {
 
 func main() {
 	pflag.Parse()
+
+	viper.AddConfigPath(viper.GetString("config.path"))
 	viper.ReadInConfig()
+	viper.WatchConfig()
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		log.Infoln("Config file was changed")
+	})
 
 	if viper.GetString("slack.token") == "" {
 		log.Fatalln("Parameter slack.token is required")
@@ -59,11 +60,6 @@ func main() {
 	if viper.GetString("config.path") != "" {
 		viper.AddConfigPath(viper.GetString("config.path"))
 	}
-
-	viper.WatchConfig()
-	viper.OnConfigChange(func(e fsnotify.Event) {
-		log.Infoln("Config file was changed")
-	})
 
 	var (
 		client = slack.New(viper.GetString("slack.token"))

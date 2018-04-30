@@ -29,11 +29,17 @@ build: clean dep-ensure
 
 container: build
 	docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true
-	docker build --build-arg APP=${APP} -f .docker/Dockerfile -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+	docker build \
+		--build-arg APP=${APP} \
+		-f .docker/Dockerfile \
+		-t ${DOCKER_IMAGE}:${DOCKER_TAG} \
+		.
 
 run: container
 	docker stop ${APP} || true && docker rm ${APP} || true
-	docker run --name ${APP} --rm \
+	docker run \
+		--name ${APP} \
+		--rm \
 		-e SDB_SLACK_TOKEN=${SDB_SLACK_TOKEN} \
 		${DOCKER_IMAGE}:${DOCKER_TAG} \
 		--slack.keyword ${SDB_SLACK_KEYWORD}

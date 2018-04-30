@@ -2,3 +2,6 @@
 Gopkg*
 Makefile
 LICENSE
+/vendor
+/idea
+config.yaml
