@@ -6,6 +6,8 @@ CHANGELOG
  * Using Slack RTM
  * Configuration with config file, environment variables and flags
  * Live reload config file
+ * Docker image
+ * Simple Kubernetes deploy
 
 Init
 ----

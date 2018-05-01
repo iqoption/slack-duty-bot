@@ -16,6 +16,18 @@ const (
 )
 
 func init() {
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("$HOME/.slack-duty-bot")
+	viper.AddConfigPath(".")
+
+	viper.SetEnvPrefix("SDB")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
+	viper.BindEnv("slack.token")
+	viper.BindEnv("slack.group.id")
+	viper.BindEnv("slack.group.name")
+	viper.BindEnv("slack.threads")
+	viper.AutomaticEnv()
+
 	pflag.String("config.path", "", "Config path")
 	pflag.String("slack.token", "", "Slack API client token config")
 	// We need ID and name only because bot users can't read user groups info via api
@@ -24,18 +36,6 @@ func init() {
 	pflag.StringSlice("slack.keyword", []string{}, "Slack keywords to lister")
 	pflag.Bool("slack.threads", true, "Usage of Slack threads to reply on messages")
 	viper.BindPFlags(pflag.CommandLine)
-
-	viper.AutomaticEnv()
-	viper.SetEnvPrefix("SDB")
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", ".", "_", "_"))
-	viper.BindEnv("slack_token")
-	viper.BindEnv("slack_group_id")
-	viper.BindEnv("slack_group_name")
-	viper.BindEnv("slack_threads")
-
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("$HOME/.slack-duty-bot")
-	viper.AddConfigPath(".")
 
 	log.SetFormatter(&log.TextFormatter{DisableColors: true})
 	log.SetLevel(log.DebugLevel)

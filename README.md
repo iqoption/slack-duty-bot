@@ -52,7 +52,7 @@ docker run --rm -v $(pwd):/go/src/slack-duty-bot -w /go/src/slack-duty-bot golan
 ### Configuration
 
 #### Configuration flags, environment variables
-Environment variables are prefixed with `SDB_` and *MUST* be uppercase with `_` delimiter
+Environment variables are prefixed with `SDB_` and **MUST** be uppercase with `_` delimiter
 Available variables:
 * `SDB_SLACK_TOKEN`
 * `SDB_SLACK_GROUP_ID`
@@ -61,7 +61,7 @@ Available variables:
 
 Every environment variable can be overwritten by startup flags
 Available flags:
-* `--config.path` - path to yml config (default: . and $HOME/.slack-duty-bot)
+* `--config.path` - path to config.yaml file (default: . and $HOME/.slack-duty-bot)
 * `--slack.token` - Slack API client token
 * `--slack.keyword` - Case insensitive keywords slice to search in message text, can be set multiple times (default: [])
 * `--slack.group.name` - Slack user group name, to mention in channel if duty list is empty
@@ -71,7 +71,7 @@ Available flags:
 You can get IDS from api or just use [testing page](https://api.slack.com/methods/usergroups.list/test)
 
 #### Configuration file
-Configuration file *MUST* contain `duties` key with *7* slices of Slack user names
+Configuration file **MUST** contain `duties` key with **7** slices of Slack user names
 ```yaml
 duties:
   - [username.one, username.two] # Sunday
@@ -87,3 +87,79 @@ duties:
 * Flags
 * Environment variables
 * Config file
+
+### Deploy to Kubernetes
+
+#### Create namespace
+```bash
+kubectl create namespace slack-duty-bot
+```
+
+#### Create namespace quota
+```yaml
+#namespace-quota.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: slack-duty-bot-quota
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 1Gi
+    limits.cpu: "4"
+    limits.memory: 2Gi
+```
+```bash
+kubectl create -f namespace-quota.yaml --namespace=slack-duty-bot
+```
+
+#### Create limit range 
+```yaml
+#namespace-limit-range.yaml
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: slack-duty-bot-limit-range
+spec:
+limits:
+  - default:
+      cpu: "200m"
+      memory: 128Mi
+    defaultRequest:
+      cpu: "100m"
+      memory: 64Mi
+    type: Container
+```
+```bash
+kubectl create -f namespace-limit-range.yaml --namespace=slack-duty-bot
+```
+
+#### Prepare your deployment file
+```bash
+(docker run \
+    --rm \
+    -it \
+    -v $(pwd):/tmp \
+    -e SDB_SLACK_TOKEN_BASE64=your-token-hash \
+    -e SDB_NAME=your-deployment-name \
+    -e SDB_TAG=1.0.0 \
+    -e SDB_KEYWORD=your-keyword \
+    -e SDB_SLACK_DEFAULT_USER=default-username \
+    -e SDB_SLACK_GROUP_ID=group-id \
+    -e SDB_SLACK_GROUP_NAME=group-name \
+    supinf/envsubst /tmp/.kubernetes/deploy.yaml.tpl) > $(pwd)/.kubernetes/deploy.yaml
+
+```
+or use native `envsubst`
+```bash
+(SDB_NAME=bot-name SDB_TAG=1.0.0 envsubst < $(pwd)/.kubernetes/deploy.yaml.tpl) $(pwd)/.kubernetes/deploy.yaml
+```
+
+#### Deploy! 
+```bash
+kubectl apply -f $(pwd)/.kubernetes/deploy.yaml --namespace slack-duty-bot
+```
+
+## Authors
+* [Konstantin Perminov](https://github.com/SpiLLeR)
+* [Ageev Pavel](https://github.com/insidieux)

@@ -19,3 +19,4 @@
 /vendor
 slack-duty-bot
 config.yaml
+.kubernetes/deploy.yaml
