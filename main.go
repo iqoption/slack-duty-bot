@@ -71,8 +71,6 @@ func main() {
 
 	var incomingErrorCount = 0
 	for packet := range rtm.IncomingEvents {
-		log.Debugf("Incoming event with type %s", packet.Type)
-
 		switch event := packet.Data.(type) {
 		case *slack.ConnectedEvent:
 			log.Infoln("RTM connection established")
