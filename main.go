@@ -107,7 +107,7 @@ func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
 		return strings.Contains(strings.ToLower(event.Text), strings.ToLower(keyword))
 	})
 	if contains == false {
-		return fmt.Errorf("incoming message text '%s' does not contain any suitable keywords (%s)", event.Text, strings.Join(keywords, ", "))
+		return fmt.Errorf("incoming message text does not contain any suitable keywords (%s)", strings.Join(keywords, ", "))
 	}
 	log.Infof("Incoming message text: %s", event.Text)
 	// collection user ids for make duties list
