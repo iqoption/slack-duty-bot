@@ -152,8 +152,17 @@ kubectl create -f namespace-limit-range.yaml --namespace=slack-duty-bot
 ```
 or use native `envsubst`
 ```bash
-(SDB_NAME=bot-name SDB_TAG=1.0.0 envsubst < $(pwd)/.kubernetes/deploy.yaml.tpl) $(pwd)/.kubernetes/deploy.yaml
+(SDB_SLACK_TOKEN_BASE64=your-token-hash \
+    SDB_NAME=your-deployment-name \
+    SDB_TAG=1.0.0 \
+    SDB_KEYWORD=your-keyword \
+    SDB_SLACK_DEFAULT_USER=default-username \
+    SDB_SLACK_GROUP_ID=group-id \
+    SDB_SLACK_GROUP_NAME=group-name \
+    envsubst < $(pwd)/.kubernetes/deploy.yaml.tpl) $(pwd)/.kubernetes/deploy.yaml
 ```
+
+After that you can change configuration with `kubect` or edit config map directly from Kubernetes dashboard
 
 #### Deploy! 
 ```bash
