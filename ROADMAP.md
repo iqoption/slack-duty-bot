@@ -7,3 +7,6 @@ ROADMAP
 * Persistent storage for duties configuration
 * Multiple instance mode with ex-locks
 * HELM support
+* Healtchecks
+* Kubernetes livenessprobe/readinessprobe
+* Support prometheus metrics
