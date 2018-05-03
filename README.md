@@ -5,9 +5,9 @@
 ### Usage
 1. Create new custom integration `Bots` (e.g https://{team}.slack.com/apps/manage/custom-integrations)
 2. Add bot to channels you want to listen
-2. Build for your environment
-3. Prepare config.yaml with duties list
-3. Run with the required parameters
+3. Build for your environment or download [tarball with binary](https://github.com/iqoption/slack-duty-bot/releases) for your OS and arch
+4. Prepare config.yaml with duties list
+5. Run with the required parameters
 
 ```bash
 SDB_SLACK_TOKEN=your-token-here ./slack-duty-bot \
@@ -46,13 +46,18 @@ make BUILD_OS=linux BUILD_ARCH=amd64
 ```
 Build in docker
 ```bash
-docker run --rm -v $(pwd):/go/src/slack-duty-bot -w /go/src/slack-duty-bot golang:1.10 make BUILD_OS=linux BUILD_ARCH=amd64
+docker run \
+    --rm \
+    -v $(pwd):/go/src/slack-duty-bot \
+    -w /go/src/slack-duty-bot \
+    golang:1.10 make BUILD_OS=linux BUILD_ARCH=amd64
 ```
 
 ### Configuration
 
 #### Configuration flags, environment variables
 Environment variables are prefixed with `SDB_` and **MUST** be uppercase with `_` delimiter
+
 Available variables:
 * `SDB_SLACK_TOKEN`
 * `SDB_SLACK_GROUP_ID`
@@ -60,6 +65,7 @@ Available variables:
 * `SDB_SLACK_THREADS`
 
 Every environment variable can be overwritten by startup flags
+
 Available flags:
 * `--config.path` - path to config.yaml file (default: . and $HOME/.slack-duty-bot)
 * `--slack.token` - Slack API client token
