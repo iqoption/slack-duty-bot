@@ -1,7 +1,8 @@
 all: build
 
-APP?=slack-duty-bot
+APP:=slack-duty-bot
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
 BUILD_OS?=linux
 BUILD_ARCH?=amd64
 DOCKER_IMAGE?=insidieux/${APP}
@@ -27,7 +28,7 @@ test: dep-ensure
 build: clean dep-ensure
 	env GOOS=${BUILD_OS} GOARCH=${BUILD_ARCH} CGO_ENABLED=0 go build -v -o ${APP}
 
-container: build
+image: build
 	docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true
 	docker build \
 		--build-arg APP=${APP} \
@@ -35,7 +36,7 @@ container: build
 		-t ${DOCKER_IMAGE}:${DOCKER_TAG} \
 		.
 
-run: container
+run: image
 	docker stop ${APP} || true && docker rm ${APP} || true
 	docker run \
 		--name ${APP} \
@@ -44,6 +45,6 @@ run: container
 		${DOCKER_IMAGE}:${DOCKER_TAG} \
 		--slack.keyword ${SDB_SLACK_KEYWORD}
 
-push: container
+push: image
 	docker login docker.io -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
 	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}

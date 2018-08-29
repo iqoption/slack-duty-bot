@@ -1,7 +1,4 @@
-*.md
-Gopkg*
-Makefile
-LICENSE
-/vendor
-/idea
-config.yaml
+*
+
+!.docker/docker-entrypoint
+!slack-duty-bot

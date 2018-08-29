@@ -2,13 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/fsnotify/fsnotify"
-	"github.com/nlopes/slack"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	"strings"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/nlopes/slack"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -28,13 +30,14 @@ func init() {
 	viper.BindEnv("slack.threads")
 	viper.AutomaticEnv()
 
+	pflag.String("logger.level", "debug", "Log level")
 	pflag.String("config.path", "", "Config path")
 	pflag.String("slack.token", "", "Slack API client token config")
-	// We need ID and name only because bot users can't read user groups info via api
 	pflag.String("slack.group.name", "", "Slack group ID for calling in fallback mode")
 	pflag.String("slack.group.id", "", "Slack group name for calling in fallback mode")
 	pflag.StringSlice("slack.keyword", []string{}, "Slack keywords to lister")
 	pflag.Bool("slack.threads", true, "Usage of Slack threads to reply on messages")
+
 	viper.BindPFlags(pflag.CommandLine)
 
 	log.SetFormatter(&log.TextFormatter{DisableColors: true})
@@ -44,77 +47,112 @@ func init() {
 func main() {
 	pflag.Parse()
 
-	viper.AddConfigPath(viper.GetString("config.path"))
+	if path := viper.GetString("config.path"); path != "" {
+		viper.AddConfigPath(path)
+	}
 	viper.ReadInConfig()
 	viper.WatchConfig()
-	viper.OnConfigChange(func(e fsnotify.Event) {
-		log.Infoln("Config file was changed")
+	viper.OnConfigChange(func(in fsnotify.Event) {
+		log.Debugln("Reloading configuration")
 	})
 
-	if viper.GetString("slack.token") == "" {
-		log.Fatalln("Parameter slack.token is required")
-	}
-	if len(viper.GetStringSlice("slack.keyword")) == 0 {
-		log.Fatalln("Parameter slack.keyword is required")
-	}
-	if viper.GetString("config.path") != "" {
-		viper.AddConfigPath(viper.GetString("config.path"))
+	if level, err := log.ParseLevel(viper.GetString("logger.level")); err != nil && level != log.DebugLevel {
+		log.SetLevel(level)
 	}
 
+	if err := validateArguments(); err != nil {
+		log.Fatalf("Validation arguments error: %+v", err)
+	}
+
+	go watchConfig()
+
 	var (
-		client = slack.New(viper.GetString("slack.token"))
-		rtm    = client.NewRTM()
+		slackRTM = slack.New(viper.GetString("slack.token")).NewRTM()
 	)
 
 	log.Infoln("Send request for RTM connection")
-	go rtm.ManageConnection()
+	go slackRTM.ManageConnection()
 
 	var incomingErrorCount = 0
-	for packet := range rtm.IncomingEvents {
+	for packet := range slackRTM.IncomingEvents {
 		switch event := packet.Data.(type) {
 		case *slack.ConnectedEvent:
 			log.Infoln("RTM connection established")
 
 		case *slack.InvalidAuthEvent:
-			rtm.Disconnect()
-			log.Fatalf("Could not authenticate, invalid Slack token passed, terminate")
+			slackRTM.Disconnect()
+			log.Fatalln("Could not authenticate, invalid Slack token passed, terminate")
 
 		case *slack.IncomingEventError:
 			incomingErrorCount++
-			log.Warningf("RTM incoming error: %+v", event.Error())
+			log.Errorf("RTM incoming error: %+v", event.Error())
 			if incomingErrorCount >= incomingErrorRetry {
-				rtm.Disconnect()
+				slackRTM.Disconnect()
 				log.Fatalf("Reached error reconnect limit %d on %s type error, terminate", incomingErrorRetry, packet.Type)
 			}
 
 		case *slack.MessageEvent:
-			log.Printf("Incoming message event")
-			if err := handleMessageEvent(rtm, event); err != nil {
-				log.Warningf("Handle message event error: %v", err)
+			log.Println("Incoming message event")
+			log.Debugf("Message event: %+v", event)
+			if err := handleMessageEvent(slackRTM, event); err != nil {
+				log.Errorf("Handle message event error: %v", err)
 			}
 		}
 	}
 }
 
+func watchConfig() {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatalf("Failed to initialize config watcher: %+v", err)
+	}
+	defer watcher.Close()
+
+	done := make(chan bool)
+	go func() {
+		for {
+			select {
+			case event := <-watcher.Events:
+				if event.Op&fsnotify.Create == fsnotify.Create {
+					log.Debugln("Reloading configuration")
+					viper.ReadInConfig()
+				}
+			case err := <-watcher.Errors:
+				log.Debugf("Watcher error: %+v", err)
+			}
+		}
+	}()
+
+	err = watcher.Add(viper.GetString("config.path"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	<-done
+}
+
+func validateArguments() error {
+	if viper.GetString("slack.token") == "" {
+		return fmt.Errorf("parameter slack.token is required")
+	}
+	if len(viper.GetStringSlice("slack.keyword")) == 0 {
+		return fmt.Errorf("parameter slack.keyword is required")
+	}
+	return nil
+}
+
 func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
-	// check text
-	if event.Text == "" {
-		return fmt.Errorf("incoming message with empty text")
+	if err := checkMessageEvent(event); err != nil {
+		log.Debugf("Check message error: %+v", err)
+		return nil
 	}
-	// check keywords
-	var keywords = viper.GetStringSlice("slack.keyword")
-	contains := any(keywords, func(keyword string) bool {
-		return strings.Contains(strings.ToLower(event.Text), strings.ToLower(keyword))
-	})
-	if contains == false {
-		return fmt.Errorf("incoming message text does not contain any suitable keywords (%s)", strings.Join(keywords, ", "))
-	}
+
 	log.Infof("Incoming message text: %s", event.Text)
+
 	// collection user ids for make duties list
 	var userIds = make(map[string]string, 0)
 	users, err := rtm.Client.GetUsers()
 	if err != nil {
-		log.Warningf("Failed to get users list from Slack API: %v", err)
+		log.Errorf("Failed to get users list from Slack API: %v", err)
 	}
 	if users != nil {
 		for _, user := range users {
@@ -131,7 +169,7 @@ func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
 	for _, username := range config.Duties[int(time.Now().Weekday())] {
 		userId, ok := userIds[username]
 		if !ok {
-			log.Warningf("Failed to get user id by username %s", username)
+			log.Errorf("Failed to get user id by username %s", username)
 		}
 		duties = append(duties, fmt.Sprintf("<@%s|%s>", userId, username))
 	}
@@ -143,8 +181,26 @@ func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
 	if viper.GetBool("slack.threads") == true {
 		outgoing.ThreadTimestamp = event.Timestamp
 	}
-	log.Infof("Outgoing message: %+v", outgoing)
+	log.Debugf("Outgoing message: %+v", outgoing)
 	rtm.SendMessage(outgoing)
+	return nil
+}
+
+func checkMessageEvent(event *slack.MessageEvent) error {
+	if event.Topic != "" {
+		return fmt.Errorf("inocming message about topic change")
+	}
+	// check text
+	if event.Text == "" {
+		return fmt.Errorf("incoming message with empty text")
+	}
+	// check keywords
+	contains := any(viper.GetStringSlice("slack.keyword"), func(keyword string) bool {
+		return strings.Contains(strings.ToLower(event.Text), strings.ToLower(keyword))
+	})
+	if contains == false {
+		return fmt.Errorf("incoming message text does not contain any suitable keywords")
+	}
 	return nil
 }
 
