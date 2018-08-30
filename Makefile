@@ -3,9 +3,9 @@ all: build
 # strict variables
 APP:=slack-duty-bot
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-SRC_DIR:=$(shell echo '/go/$(shell echo ${ROOT_DIR} | awk -F'/go/' '{print $$2}')')
 
 # build go binary variables
+SRC_DIR?=$(shell echo '/go/$(shell echo ${ROOT_DIR} | awk -F'/go/' '{print $$2}')')
 BUILD_OS?=linux
 BUILD_ARCH?=amd64
 
