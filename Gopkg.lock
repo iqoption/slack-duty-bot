@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:2190a20f82e8921ff10632c88181b471ba64576ef6765e1e552f25870a4d4749"
+  name = "github.com/aandryashin/reloader"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "da4f1b43ce4053e60e56b3a118d9037afc1d92df"
+  version = "1.0.0"
+
+[[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -165,7 +173,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/fsnotify/fsnotify",
+    "github.com/aandryashin/reloader",
     "github.com/nlopes/slack",
     "github.com/sirupsen/logrus",
     "github.com/spf13/pflag",

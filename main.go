@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
+	"github.com/aandryashin/reloader"
 	"github.com/nlopes/slack"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -30,7 +31,7 @@ func init() {
 	viper.BindEnv("slack.threads")
 	viper.AutomaticEnv()
 
-	pflag.String("logger.level", "debug", "Log level")
+	pflag.String("logger.level", "info", "Log level")
 	pflag.String("config.path", "", "Config path")
 	pflag.String("slack.token", "", "Slack API client token config")
 	pflag.String("slack.group.name", "", "Slack group ID for calling in fallback mode")
@@ -41,7 +42,7 @@ func init() {
 	viper.BindPFlags(pflag.CommandLine)
 
 	log.SetFormatter(&log.TextFormatter{DisableColors: true})
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.InfoLevel)
 }
 
 func main() {
@@ -51,10 +52,11 @@ func main() {
 		viper.AddConfigPath(path)
 	}
 	viper.ReadInConfig()
-	viper.WatchConfig()
-	viper.OnConfigChange(func(in fsnotify.Event) {
-		log.Debugln("Reloading configuration")
-	})
+
+	err := reloader.Watch(filepath.Dir(viper.ConfigFileUsed()), watcherFunc, 5*time.Second)
+	if err != nil {
+		log.Fatalf("Failed to init config watcher: %+v", err)
+	}
 
 	if level, err := log.ParseLevel(viper.GetString("logger.level")); err != nil && level != log.DebugLevel {
 		log.SetLevel(level)
@@ -64,11 +66,12 @@ func main() {
 		log.Fatalf("Validation arguments error: %+v", err)
 	}
 
-	go watchConfig()
+	client := slack.New(viper.GetString("slack.token"))
+	if log.GetLevel() == log.DebugLevel {
+		client.SetDebug(true)
+	}
 
-	var (
-		slackRTM = slack.New(viper.GetString("slack.token")).NewRTM()
-	)
+	slackRTM := client.NewRTM()
 
 	log.Infoln("Send request for RTM connection")
 	go slackRTM.ManageConnection()
@@ -101,33 +104,11 @@ func main() {
 	}
 }
 
-func watchConfig() {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatalf("Failed to initialize config watcher: %+v", err)
+func watcherFunc() {
+	if err := viper.ReadInConfig(); err != nil {
+		log.Errorf("Failed to update config on fs event: %+v", err)
 	}
-	defer watcher.Close()
-
-	done := make(chan bool)
-	go func() {
-		for {
-			select {
-			case event := <-watcher.Events:
-				if event.Op&fsnotify.Create == fsnotify.Create {
-					log.Debugln("Reloading configuration")
-					viper.ReadInConfig()
-				}
-			case err := <-watcher.Errors:
-				log.Debugf("Watcher error: %+v", err)
-			}
-		}
-	}()
-
-	err = watcher.Add(viper.GetString("config.path"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	<-done
+	log.Debugln("Config updated on fs event")
 }
 
 func validateArguments() error {
