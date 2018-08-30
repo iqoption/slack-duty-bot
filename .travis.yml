@@ -1,0 +1,25 @@
+sudo: required
+
+language: go
+
+env:
+  global:
+    - secure: "OjHoAld/UElZpLXCa3RhgAmHLQ6x6ngP0dE0f6sP7SXMWI8fZKuM4jKIJ49UKPU329+8tOorK8FDkr8eevxUIhmRpjZm5u9CgWpxD8vq3oMHQ0+Jm052zF29Wmr6UKL+NnMJyhwftdBZL7tFAjB8hdPK5wPIGleJmgVnYhbm7gdbo7kuBGW1AcF3ON2THOeTP7EvQCDyeR06umtHmZ+m+IAWm+i+kkRZiUjUkTwUI+nKHu2nij1/x4Db6pATLy4QDqEtpvpAbTvhOynU+EPXr2SUpFCrJAcU815wrSBhSMxdCcgXMxuPujZHzVY6EFmGhXt0iJEfvO/oFbGMZ0AbUzRbgjOAbHPqBQcoCnEOE4rGXa2UvRledTphiI+CM1lsNuU1MBKJLkPJuTsntcerGGlz8wK4NawAdDZRLX9Oe7OLea0mfhFWEZE2jUSTDzQJw2POkZ16+2QXtqWPrcCEVv+rKGwRkq5ay5ZaIv2S4OFYtrT+W+6FPRxT19HwGkFWN40C4QYvZIt8JNgzj9jUePiu2lJCSMJfMgnHcjK0/bQL+ZR1LxwUhWp6jX3aLoT4oE/lfWRUloMJKfA6MkqaP7J9H/0HoNscjqUfvmUnakIJwsqsRV/9Srm3fqflesIWdH2cyRPmy9GlOPLLFZTG2VDv5/bvfGwzbx9AU+7C1Io=" # DOCKER_USER
+    - secure: "fFI+YMqh5IVXzcMYOFre7gQzOn87VgeqIBSGE6rZKke+mJTWFs1ddWtSjNsAknevq6wbs1Pvh+Jr0hb3OuLj6U11HGjf09YPCC9pcp584VbVCGI7fTdMM5o1lYlcU4z+4zFl+Tx4ZJAuez+1es58tEq1qWS0Klq9r/sc3R3kLjod0gi+ZvYcGXEHZ3G7gdCGYC26w71syzTW9025Y3h2/XoUDxwKbxbmsLD6Tp5bkAfW7TTDyUHU6qTp9vMBMUvhtDI9iBCZMbXoqFBByTVarJTgdDqF91+Mp/xPwU/sZMBtq+HBokCK7dJ3a+huw0xto8j2Y0vazRHXqPSOpE+pAnDaT1Ijhq6IyG21rN9AIHVQR6sbtLpMKNc3nPwdqga4PUDLX+iM5VnRCBUm+ciWCA/dB04z1ZN03gPR9RBLBfEpfSgFDY+xfd3gnGBwRuygTHFhgrk/ILNkjLnQZv9zINVOn/vu9n5XyHw7BfvFOYp57Ivi295AMcNFKg4uclXX5Ig+MfCxMgkz1p8JytEF0noKuSdSUieuBShZCUhiEujtH4sylySOj9q3gbkOL2DHRrlTXiczHVWxWALzIhB+kKeDZbdo+MUIWjf66Xiq8kwT3xU9k5G+kLenURnrgGggZlqZBAdQl7XCUwVKOjw1Vn6vx4yiLEWUFWWAKffePUI=" # DOCKER_PASSWORD
+
+services:
+  - docker
+
+install:
+  - make
+
+#branches:
+#  only:
+#    - master
+#    - /^(\d+?)\.(\d+?)\.(\d+?)$/
+
+script:
+  - make test
+
+after_success:
+  - make push DOCKER_TAG=${TRAVIS_TAG} DOCKER_USER=${DOCKER_USER} DOCKER_PASSWORD=${DOCKER_PASSWORD}
