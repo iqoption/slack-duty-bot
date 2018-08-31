@@ -1,6 +1,7 @@
 # Slack duty bot
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Report Card](https://goreportcard.com/badge/github.com/iqoption/slack-duty-bot)](https://goreportcard.com/report/github.com/iqoption/slack-duty-bot)
+[![Build Status](https://travis-ci.org/iqoption/slack-duty-bot.svg?branch=master)](https://travis-ci.org/iqoption/slack-duty-bot)
 
 ### Usage
 1. Create new custom integration `Bots` (e.g https://{team}.slack.com/apps/manage/custom-integrations)
