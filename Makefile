@@ -10,18 +10,21 @@ BUILD_OS?=linux
 BUILD_ARCH?=amd64
 
 # docker build variables
-DOCKER_IMAGE?=insidieux/${APP}
+DOCKER_NAMESPACE?=
+DOCKER_IMAGE=${DOCKER_NAMESPACE}/${APP}
 DOCKER_TAG?=1.0.0
-DOCKER_USER?=user
-DOCKER_PASSWORD?=password
+DOCKER_USER?=
+DOCKER_PASSWORD?=
 
 # run variables
 SDB_SLACK_TOKEN?=some-token
 SDB_SLACK_KEYWORD?=keyword
 
+clean:
+	rm -rf vendor
+	rm -rf .vendor-new
+
 dep-ensure:
-	rm -r vendor || true
-	rm -r .vendor-new || true
 	docker run --rm \
 		-v ${ROOT_DIR}:${SRC_DIR} \
 		-w ${SRC_DIR} \
@@ -36,7 +39,7 @@ test: dep-ensure
 		go test -v -race ./...
 
 build: dep-ensure
-	rm ${APP} || true
+	rm -f ${APP} || true
 	docker run --rm \
 		-v ${ROOT_DIR}:${SRC_DIR} \
 		-w ${SRC_DIR} \
@@ -50,16 +53,6 @@ image: build
 		-f .docker/Dockerfile \
 		-t ${DOCKER_IMAGE}:${DOCKER_TAG} \
 		.
-
-run: image
-	docker stop ${APP} || true
-	docker rm ${APP} || true
-	docker run \
-		--name ${APP} \
-		--rm \
-		-e SDB_SLACK_TOKEN=${SDB_SLACK_TOKEN} \
-		${DOCKER_IMAGE}:${DOCKER_TAG} \
-		--slack.keyword ${SDB_SLACK_KEYWORD}
 
 push: image
 	docker login docker.io -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}

@@ -25,6 +25,7 @@ func init() {
 
 	viper.SetEnvPrefix("SDB")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
+	viper.BindEnv("logger.level")
 	viper.BindEnv("slack.token")
 	viper.BindEnv("slack.group.id")
 	viper.BindEnv("slack.group.name")
