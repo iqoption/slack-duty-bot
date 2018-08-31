@@ -30,7 +30,7 @@ docker run \
     --slack.keyword keyword-1 \
     --slack.keyword keyword-2
     --slack.group.id your-group-id \
-    --slack.group.name your-group-name \
+    --slack.group.name your-group-name
 ```
 
 ### Build package
