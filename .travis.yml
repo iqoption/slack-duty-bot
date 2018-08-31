@@ -1,0 +1,21 @@
+sudo: required
+
+language: go
+
+env:
+  global:
+    - SRC_DIR: /go/src/github.com/${TRAVIS_REPO_SLUG}
+    - DOCKER_TAG: ${TRAVIS_TAG}
+
+services:
+  - docker
+
+jobs:
+  include:
+    - stage: tests
+      script:
+        - make test SRC_DIR=${SRC_DIR}
+    - stage: push image
+      script:
+        - make push SRC_DIR=${SRC_DIR} DOCKER_NAMESPACE=${DOCKER_NAMESPACE} DOCKER_TAG=${DOCKER_TAG} DOCKER_USER=${DOCKER_USER} DOCKER_PASSWORD=${DOCKER_PASSWORD}
+      if: tag IS present

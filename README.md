@@ -30,7 +30,7 @@ docker run \
     --slack.keyword keyword-1 \
     --slack.keyword keyword-2
     --slack.group.id your-group-id \
-    --slack.group.name your-group-name \
+    --slack.group.name your-group-name
 ```
 
 ### Build package
@@ -59,6 +59,7 @@ docker run \
 Environment variables are prefixed with `SDB_` and **MUST** be uppercase with `_` delimiter
 
 Available variables:
+* `SDB_LOGGER_LEVEL`
 * `SDB_SLACK_TOKEN`
 * `SDB_SLACK_GROUP_ID`
 * `SDB_SLACK_GROUP_NAME`
@@ -67,7 +68,8 @@ Available variables:
 Every environment variable can be overwritten by startup flags
 
 Available flags:
-* `--config.path` - path to config.yaml file (default: . and $HOME/.slack-duty-bot)
+* `--logger.level` - Log level (default: "info")
+* `--config.path` - Path to config.yaml file (default: . and $HOME/.slack-duty-bot)
 * `--slack.token` - Slack API client token
 * `--slack.keyword` - Case insensitive keywords slice to search in message text, can be set multiple times (default: [])
 * `--slack.group.name` - Slack user group name, to mention in channel if duty list is empty
@@ -174,6 +176,25 @@ After that you can change configuration with `kubect` or edit config map directl
 ```bash
 kubectl apply -f $(pwd)/.kubernetes/deploy.yaml --namespace slack-duty-bot
 ```
+
+## Contributing
+
+### Travis-CI and tests
+To enable tests for your fork repository you **MUST**:
+
+* Create your project in [TravisCI](http://travis-ci.com) for your fork repository
+* Add environment variables to Travis-CI project:
+    * `DOCKER_NAMESPACE`
+    * `DOCKER_USER`
+    * `DOCKER_PASSWORD`
+
+Travis-CI will run test on every push for every ref and build docker image and push to [docker hub](http://hub.docker.io) *ONLY FOR TAGS*
+
+## Changelog
+[Changelog for project](CHANGELOG.md)
+
+## Roadmap
+[Roadmap for project](ROADMAP.md)
 
 ## Authors
 * [Konstantin Perminov](https://github.com/SpiLLeR)

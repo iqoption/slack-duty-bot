@@ -1,33 +1,52 @@
 all: build
 
-APP?=slack-duty-bot
+# strict variables
+APP:=slack-duty-bot
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
+# build go binary variables
+SRC_DIR?=$(shell echo '/go/$(shell echo ${ROOT_DIR} | awk -F'/go/' '{print $$2}')')
 BUILD_OS?=linux
 BUILD_ARCH?=amd64
-DOCKER_IMAGE?=insidieux/${APP}
+
+# docker build variables
+DOCKER_NAMESPACE?=
+DOCKER_IMAGE=${DOCKER_NAMESPACE}/${APP}
 DOCKER_TAG?=1.0.0
-DOCKER_USER?=user
-DOCKER_PASSWORD?=password
+DOCKER_USER?=
+DOCKER_PASSWORD?=
+
+# run variables
 SDB_SLACK_TOKEN?=some-token
 SDB_SLACK_KEYWORD?=keyword
 
 clean:
-	rm -f ${APP}
-
-dep-install:
-	go get -v -u github.com/golang/dep/cmd/dep
-
-dep-ensure: dep-install
 	rm -rf vendor
-	dep ensure
+	rm -rf .vendor-new
+
+dep-ensure:
+	docker run --rm \
+		-v ${ROOT_DIR}:${SRC_DIR} \
+		-w ${SRC_DIR} \
+		golang:1.10 \
+		bash -c "go get -v -u github.com/golang/dep/cmd/dep && dep ensure"
 
 test: dep-ensure
-	go test -v -race ./...
+	docker run --rm \
+		-v ${ROOT_DIR}:${SRC_DIR} \
+		-w ${SRC_DIR} \
+		golang:1.10 \
+		go test -v -race ./...
 
-build: clean dep-ensure
-	env GOOS=${BUILD_OS} GOARCH=${BUILD_ARCH} CGO_ENABLED=0 go build -v -o ${APP}
+build: dep-ensure
+	rm -f ${APP} || true
+	docker run --rm \
+		-v ${ROOT_DIR}:${SRC_DIR} \
+		-w ${SRC_DIR} \
+		golang:1.10 \
+		env GOOS=${BUILD_OS} GOARCH=${BUILD_ARCH} CGO_ENABLED=0 go build -o ${APP} -v main.go
 
-container: build
+image: build
 	docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true
 	docker build \
 		--build-arg APP=${APP} \
@@ -35,15 +54,6 @@ container: build
 		-t ${DOCKER_IMAGE}:${DOCKER_TAG} \
 		.
 
-run: container
-	docker stop ${APP} || true && docker rm ${APP} || true
-	docker run \
-		--name ${APP} \
-		--rm \
-		-e SDB_SLACK_TOKEN=${SDB_SLACK_TOKEN} \
-		${DOCKER_IMAGE}:${DOCKER_TAG} \
-		--slack.keyword ${SDB_SLACK_KEYWORD}
-
-push: container
+push: image
 	docker login docker.io -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
 	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
