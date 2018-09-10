@@ -26,7 +26,7 @@ docker run \
     -v $(pwd)/config:/etc/slack-duty-bot \
     -e SDB_SLACK_TOKEN=your-token-here \
     -d \
-    insidieux/slack-duty-bot:1.0.0 \
+    iqoption/slack-duty-bot:1.1.0 \
     --config.path=/etc/slack-duty-bot \
     --slack.keyword keyword-1 \
     --slack.keyword keyword-2
@@ -151,7 +151,7 @@ kubectl create -f namespace-limit-range.yaml --namespace=slack-duty-bot
     -v $(pwd):/tmp \
     -e SDB_SLACK_TOKEN_BASE64=your-token-hash \
     -e SDB_NAME=your-deployment-name \
-    -e SDB_TAG=1.0.0 \
+    -e SDB_TAG=1.1.0 \
     -e SDB_KEYWORD=your-keyword \
     -e SDB_SLACK_DEFAULT_USER=default-username \
     -e SDB_SLACK_GROUP_ID=group-id \
@@ -163,7 +163,7 @@ or use native `envsubst`
 ```bash
 (SDB_SLACK_TOKEN_BASE64=your-token-hash \
     SDB_NAME=your-deployment-name \
-    SDB_TAG=1.0.0 \
+    SDB_TAG=1.1.0 \
     SDB_KEYWORD=your-keyword \
     SDB_SLACK_DEFAULT_USER=default-username \
     SDB_SLACK_GROUP_ID=group-id \
