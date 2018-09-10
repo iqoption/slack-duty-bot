@@ -49,7 +49,7 @@ spec:
     spec:
       containers:
       - name: slack-duty-bot-${SDB_NAME}
-        image: insidieux/slack-duty-bot:${SDB_TAG}
+        image: iqoption/slack-duty-bot:${SDB_TAG}
         imagePullPolicy: Always
         args: ["--config.path=/etc/slack-duty-bot"]
         env:
