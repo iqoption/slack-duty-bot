@@ -35,23 +35,26 @@ docker run \
 ```
 
 ### Build package
+** Golang:1.11 is required **
+
 Build
 ```bash
-go get -u github.com/golang/dep/cmd/dep
-dep ensure
-env GOOS=linux GOARCH=amd64 go build -v
+env GOOS=linux GOARCH=amd64 GO111MODULE=on go build -o slack-duty-bot -v
 ```
 Build via makefile
 ```bash
-make BUILD_OS=linux BUILD_ARCH=amd64
+make GOOS=linux GOARCH=amd64
 ```
 Build in docker
 ```bash
 docker run \
     --rm \
-    -v $(pwd):/go/src/slack-duty-bot \
-    -w /go/src/slack-duty-bot \
-    golang:1.10 make BUILD_OS=linux BUILD_ARCH=amd64
+    -v $(pwd):/project \
+    -w /project \
+    -e GOOS=linux \
+    -e GOARCH=amd64 \
+    -e GO111MODULE=on \
+    golang:1.11 go build -o slack-duty-bot -v
 ```
 
 ### Configuration
@@ -60,22 +63,22 @@ docker run \
 Environment variables are prefixed with `SDB_` and **MUST** be uppercase with `_` delimiter
 
 Available variables:
-* `SDB_LOGGER_LEVEL`
 * `SDB_SLACK_TOKEN`
 * `SDB_SLACK_GROUP_ID`
 * `SDB_SLACK_GROUP_NAME`
 * `SDB_SLACK_THREADS`
+* `SDB_LOGGER_LEVEL`
 
 Every environment variable can be overwritten by startup flags
 
 Available flags:
-* `--logger.level` - Log level (default: "info")
+* `--slack.token` - Slack API client token (** Required **)
+* `--slack.keyword` - Case insensitive keywords slice to search in message text, can be set multiple times (default: []) (** Required **)
 * `--config.path` - Path to config.yaml file (default: . and $HOME/.slack-duty-bot)
-* `--slack.token` - Slack API client token
-* `--slack.keyword` - Case insensitive keywords slice to search in message text, can be set multiple times (default: [])
 * `--slack.group.name` - Slack user group name, to mention in channel if duty list is empty
 * `--slack.group.id` - Slack user group ID, to mention in channel if duty list is empty
 * `--slack.threads` - Use threads as reply target or push message direct to channel (default: true) 
+* `--logger.level` - Log level (default: "info")
 
 You can get IDS from api or just use [testing page](https://api.slack.com/methods/usergroups.list/test)
 

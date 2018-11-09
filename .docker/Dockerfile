@@ -1,12 +1,10 @@
-FROM alpine:3.7
+FROM alpine:3.8
 
-ARG APP
+ARG APP_NAME
 
-COPY "${APP}" /usr/local/bin/slack-duty-bot
-COPY .docker/docker-entrypoint /usr/local/bin/
+COPY "${APP_NAME}" /usr/local/bin/slack-duty-bot
 
-RUN apk --no-cache add ca-certificates
-
-ENTRYPOINT ["docker-entrypoint"]
+RUN apk --no-cache add ca-certificates && \
+    chmod +x /usr/local/bin/slack-duty-bot
 
 CMD ["slack-duty-bot"]
