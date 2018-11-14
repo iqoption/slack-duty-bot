@@ -12,10 +12,10 @@ APP_NAME?=slack-duty-bot
 # strict variables
 override ROOT_DIR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ifneq (, $(shell which git))
-override MOD_NAME=$(shell git config --get remote.origin.url | cut -c 5- | rev | cut -c 5- | rev | tr : / || consul-initializer)
+override MOD_NAME=$(shell git config --get remote.origin.url | cut -c 5- | rev | cut -c 5- | rev | tr : / || slack-duty-bot)
 endif
 ifeq ($(MOD_NAME),)
-override MOD_NAME=consul-initializer
+override MOD_NAME=slack-duty-bot
 endif
 
 # vendor variables
