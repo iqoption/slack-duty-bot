@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+1.2.0
+-----
+ * Using go mod instead of dep [#8 - Use go mod instead of dep](//github.com/iqoption/slack-duty-bot/issues/8)
+ * Update Makefile
+ * Fix bug with setting "Debug" logger level
+ * Add utils: bash script for preparing release artifacts
+
 1.1.0
 -----
  * Fixed issue [#4 - Kubernetes changed config map does not trigger fs event bug](//github.com/iqoption/slack-duty-bot/issues/4)
