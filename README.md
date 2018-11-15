@@ -114,7 +114,7 @@ The following table lists the configurable parameters of the Drupal chart and th
 
 ### Run deploy
 ```bash
-helm upgrade --install slack-duty-bot-my-app-name .helm/slack-duty-bot/ --set configuration.slackToken=secret-token,configuration.keywords[0]="duty",configuration.keywords[1]="autobot"
+helm upgrade --install slack-duty-bot-my-app-name .helm/slack-duty-bot/ --set configuration.slackToken=secret-token,configuration.keywords[0]="duty",configuration.keywords[1]="autobot",dutyUsers.monday=denis.arslanbekov,dutyUsers.tuesday=pavel.ageev,dutyUsers.wednesday=konstantin.perminov
 ```
 
 ## Manual deploy to Kubernetes
