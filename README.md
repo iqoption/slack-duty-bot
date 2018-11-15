@@ -3,7 +3,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/iqoption/slack-duty-bot)](https://goreportcard.com/report/github.com/iqoption/slack-duty-bot)
 [![Build Status](https://travis-ci.org/iqoption/slack-duty-bot.svg?branch=master)](https://travis-ci.org/iqoption/slack-duty-bot)
 
-### Usage
+## Usage
 1. Create new custom integration `Bots` (e.g https://{team}.slack.com/apps/manage/custom-integrations)
 2. Add bot to channels you want to listen
 3. Build for your environment or download [tarball with binary](https://github.com/iqoption/slack-duty-bot/releases) for your OS and arch
@@ -34,7 +34,7 @@ docker run \
     --slack.group.name your-group-name
 ```
 
-### Build package
+## Build package
 Build
 ```bash
 go get -u github.com/golang/dep/cmd/dep
@@ -54,9 +54,7 @@ docker run \
     golang:1.10 make BUILD_OS=linux BUILD_ARCH=amd64
 ```
 
-### Configuration
-
-#### Configuration flags, environment variables
+### Configuration flags, environment variables
 Environment variables are prefixed with `SDB_` and **MUST** be uppercase with `_` delimiter
 
 Available variables:
@@ -79,7 +77,7 @@ Available flags:
 
 You can get IDS from api or just use [testing page](https://api.slack.com/methods/usergroups.list/test)
 
-#### Configuration file
+### Configuration file
 Configuration file **MUST** contain `duties` key with **7** slices of Slack user names
 ```yaml
 duties:
@@ -92,19 +90,41 @@ duties:
   - [username.one, username.two] # Saturday
 ```
 
-#### Configuration priority
+### Configuration priority
 * Flags
 * Environment variables
 * Config file
 
-### Deploy to Kubernetes
+# Deploy to Kubernetes
 
-#### Create namespace
+## Deploy with Helm
+
+### Configuration
+
+The following table lists the configurable parameters of the Drupal chart and their default values.
+
+| Parameter                         | Description                                | Default                                                   |
+| --------------------------------- | ------------------------------------------ | --------------------------------------------------------- |
+| `image.repository`                | SDB image registry                         | `iqoption/slack-duty-bot`                                 |
+| `image.tag`                       | SDB Image tag                              | `{VERSION}`                                               |
+| `image.pullPolicy`                | SDB image pull policy                      | `IfNotPresent`                                            |
+| `configuration.slackToken`        | Slack token                                | `nil`                                                     |
+| `configuration.keywords`          | Trigger words                              | array `duty`                                              |
+
+
+### Run deploy
+```bash
+helm upgrade --install slack-duty-bot-my-app-name .helm/slack-duty-bot/ --set configuration.slackToken=secret-token,configuration.keywords[0]="duty",configuration.keywords[1]="autobot"
+```
+
+## Manual deploy to Kubernetes
+
+### Create namespace
 ```bash
 kubectl create namespace slack-duty-bot
 ```
 
-#### Create namespace quota
+### Create namespace quota
 ```yaml
 #namespace-quota.yaml
 apiVersion: v1
@@ -122,7 +142,7 @@ spec:
 kubectl create -f namespace-quota.yaml --namespace=slack-duty-bot
 ```
 
-#### Create limit range 
+### Create limit range
 ```yaml
 #namespace-limit-range.yaml
 apiVersion: v1
@@ -143,7 +163,7 @@ limits:
 kubectl create -f namespace-limit-range.yaml --namespace=slack-duty-bot
 ```
 
-#### Prepare your deployment file
+### Prepare your deployment file
 ```bash
 (docker run \
     --rm \
@@ -173,14 +193,14 @@ or use native `envsubst`
 
 After that you can change configuration with `kubect` or edit config map directly from Kubernetes dashboard
 
-#### Deploy! 
+### Deploy!
 ```bash
 kubectl apply -f $(pwd)/.kubernetes/deploy.yaml --namespace slack-duty-bot
 ```
 
-## Contributing
+# Contributing
 
-### Travis-CI and tests
+## Travis-CI and tests
 To enable tests for your fork repository you **MUST**:
 
 * Create your project in [TravisCI](http://travis-ci.com) for your fork repository
@@ -191,12 +211,12 @@ To enable tests for your fork repository you **MUST**:
 
 Travis-CI will run test on every push for every ref and build docker image and push to [docker hub](http://hub.docker.io) *ONLY FOR TAGS*
 
-## Changelog
+# Changelog
 [Changelog for project](CHANGELOG.md)
 
-## Roadmap
+# Roadmap
 [Roadmap for project](ROADMAP.md)
 
-## Authors
+# Authors
 * [Konstantin Perminov](https://github.com/SpiLLeR)
 * [Ageev Pavel](https://github.com/insidieux)

@@ -1,0 +1,43 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ include "slack-duty-bot.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "slack-duty-bot.name" . }}
+    helm.sh/chart: {{ include "slack-duty-bot.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "slack-duty-bot.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "slack-duty-bot.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        args: ["--config.path=/etc/slack-duty-bot"]
+        env:
+        - name: SDB_SLACK_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: "{{ include "slack-duty-bot.name" . }}-secret"
+              key: token
+        volumeMounts:
+        - name: "{{ include "slack-duty-bot.name" . }}-config-volume"
+          mountPath: /etc/slack-duty-bot
+        resources:
+{{ toYaml .Values.resources | indent 12 }}
+      volumes:
+        - name: "{{ include "slack-duty-bot.name" . }}-config-volume"
+          configMap:
+            name: "{{ include "slack-duty-bot.name" . }}-config-map"
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
