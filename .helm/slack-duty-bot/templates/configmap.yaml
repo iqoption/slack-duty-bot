@@ -16,4 +16,4 @@ data:
       - [ {{ .Values.dutyUsers.wednesday | quote }} ]
       - [ {{ .Values.dutyUsers.thursday | quote }} ] 
       - [ {{ .Values.dutyUsers.friday | quote }} ]
-      - [ {{ .Values.dutyUsers.saturday | quote }} ] 
+      - [ {{ .Values.dutyUsers.saturday | quote }} ]

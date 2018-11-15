@@ -5,4 +5,6 @@
 *.test
 *.out
 config.yaml
+slack-duty-bot
+!/slack-duty-bot
 .kubernetes/deploy.yaml

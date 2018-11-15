@@ -119,7 +119,7 @@ duties:
 
 #### Configuration
 
-The following table lists the configurable parameters of the Drupal chart and their default values.
+The following table lists the configurable parameters of the slack-duty-bot chart and their default values.
 
 | Parameter                         | Description                                | Default                                                   |
 | --------------------------------- | ------------------------------------------ | --------------------------------------------------------- |
@@ -132,7 +132,7 @@ The following table lists the configurable parameters of the Drupal chart and th
 #### Run deploy
 
 ```bash
-helm upgrade --install slack-duty-bot-my-app-name .helm/slack-duty-bot/ --set configuration.slackToken=secret-token,configuration.keywords[0]="duty",configuration.keywords[1]="autobot",dutyUsers.monday=denis.arslanbekov,dutyUsers.tuesday=pavel.ageev,dutyUsers.wednesday=konstantin.perminov
+helm upgrade --install slack-duty-bot-my-app-name .helm/slack-duty-bot/ --set configuration.slackToken=secret-token,configuration.keywords[0]="duty",configuration.keywords[1]="autobot",dutyUsers.monday=user.one,dutyUsers.tuesday=user.two,dutyUsers.wednesday=user.one
 ```
 
 ## Manual deploy to Kubernetes
