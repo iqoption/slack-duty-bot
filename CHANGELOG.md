@@ -7,6 +7,7 @@ CHANGELOG
  * Update Makefile
  * Fix bug with setting "Debug" logger level
  * Add utils: bash script for preparing release artifacts
+ * Add helm support [#9 - Use helm for install in kubernetes](//github.com/iqoption/slack-duty-bot/issues/9)
 
 1.1.0
 -----
