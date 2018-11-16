@@ -1,0 +1,19 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: "{{ include "slack-duty-bot.name" . }}-config-map"
+data:
+  config.yaml: |-
+    slack:
+      keyword:
+      {{- range $keyword := .Values.configuration.keywords }}
+        - {{ $keyword | quote}}
+      {{- end }}
+    duties:
+      - [ {{ .Values.dutyUsers.sunday | quote }} ]
+      - [ {{ .Values.dutyUsers.monday | quote }} ]
+      - [ {{ .Values.dutyUsers.tuesday | quote }} ]
+      - [ {{ .Values.dutyUsers.wednesday | quote }} ]
+      - [ {{ .Values.dutyUsers.thursday | quote }} ] 
+      - [ {{ .Values.dutyUsers.friday | quote }} ]
+      - [ {{ .Values.dutyUsers.saturday | quote }} ]
