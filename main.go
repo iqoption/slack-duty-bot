@@ -144,15 +144,15 @@ func validateArguments() error {
 	switch length > 0 {
 	case true:
 		if length < 7 {
-			return fmt.Errorf("duties list is not empty, but indexes count %d is less then 7 (weekdays)", length)
+			return fmt.Errorf("duties list is not empty, but indexes count %d is less than 7 (weekdays)", length)
 		}
 		if len(duties[index]) == 0 && !cfgGroup {
-			return fmt.Errorf("empty duties list for current day (%d) index and slack.group info is not exist in config", index)
+			return fmt.Errorf("empty duties list for current day (%d) index and slack.group info does not exist in config", index)
 		}
 		break
 	case false:
 		if !cfgGroup {
-			return fmt.Errorf("empty duties list in config and slack.group info is not exist in config")
+			return fmt.Errorf("empty duties list in config and slack.group info does not exist in config")
 		}
 		break
 	}
@@ -210,7 +210,7 @@ func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
 		duties = append(duties, fmt.Sprintf("<!subteam^%s|@%s>", viper.GetString("slack.group.id"), viper.GetString("slack.group.name")))
 	}
 	if len(duties) == 0 {
-		return fmt.Errorf("failed to collect duties list for incomming message")
+		return fmt.Errorf("failed to collect duties list for incoming message")
 	}
 	logrus.Debugf("Final duties list for call: %+v", duties)
 	//send message
@@ -226,7 +226,7 @@ func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
 func checkMessageEvent(event *slack.MessageEvent) error {
 	// skip topic messages
 	if event.Topic != "" {
-		return fmt.Errorf("incoming message about topic change")
+		return fmt.Errorf("the incoming message about topic change")
 	}
 	// check text
 	if event.Text == "" {
