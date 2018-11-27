@@ -82,20 +82,34 @@ Every environment variable can be overwritten by startup flags
 
 Available flags:
 
-* `--slack.token` - Slack API client token (** Required **)
-* `--slack.keyword` - Case insensitive keywords slice to search in message text, can be set multiple times (default: []) (** Required **)
-* `--config.path` - Path to config.yaml file (default: . and $HOME/.slack-duty-bot)
+* `--slack.token` - Slack API client token (**Required**)
+* `--slack.keyword` - Case insensitive keywords slice to search in message text, can be set multiple times (default: []) (**Required**)
+* `--config.path` - Path to config.yaml file (default: . and `$HOME/.slack-duty-bot`)
 * `--slack.group.name` - Slack user group name, to mention in channel if duty list is empty
 * `--slack.group.id` - Slack user group ID, to mention in channel if duty list is empty
-* `--slack.threads` - Use threads as reply target or push message direct to channel (default: true)
-* `--logger.level` - Log level (default: "info")
+* `--slack.threads` - Use threads as reply target or push message direct to channel (default: `true`)
+* `--logger.level` - Log level (default: `info`)
 
 You can get IDS from api or just use [testing page](https://api.slack.com/methods/usergroups.list/test)
 
 ### Configuration file
+There are three ways of configuration for `slack-duty-bot`
+#### Slack group
+```
+slack:
+  group:
+    id: some-group-id
+    name: some-group-name
+```
+In this way `slack-duty-bot` will always call entire Slack group in case matching keyword in message.
+#### Duties list
+By default `duties` is an empty slice (or just skipped in config)
+```yaml
+duties: []
+```
+In this case you **MUST** set `slack.group` configuration
 
-Configuration file **MUST** contain `duties` key with **7** slices of Slack user names
-
+If you prefer to set different duties for different days, you **MUST** set `duties` as slice, containing **7** indexes of slices:
 ```yaml
 duties:
   - [username.one, username.two] # Sunday
@@ -106,6 +120,23 @@ duties:
   - [username.one] # Friday
   - [username.one, username.two] # Saturday
 ```
+#### Combined
+If you prefer to set custom duties for some days, and call full group for another, just pass `duties` slice and `slack.group` configuration together:
+```yaml
+slack:
+  group:
+    id: some-group-id
+    name: some-group-name
+duties:
+  - [] # Sunday
+  - [username.one] # Monday
+  - [username.two] # Tuesday
+  - [username.one] # Wednesday
+  - [username.two] # Thursday
+  - [username.one] # Friday
+  - [] # Saturday
+```
+As the result of this configuration, `slack-duty-bot` will call `username.one` at Friday and full Slack group `some-group-name` at Saturday and Sunday
 
 ### Configuration priority
 
@@ -236,7 +267,7 @@ To enable tests for your fork repository you **MUST**:
   * `DOCKER_USER`
   * `DOCKER_PASSWORD`
 
-Travis-CI will run test on every push for every ref and build docker image and push to [docker hub](http://hub.docker.io) *ONLY FOR TAGS*
+Travis-CI will run test on every push for every ref and build docker image and push to [docker hub](http://hub.docker.io) **ONLY FOR TAGS**
 
 ## Changelog
 
