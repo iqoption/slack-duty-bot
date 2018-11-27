@@ -270,14 +270,14 @@ To enable tests for your fork repository you **MUST**:
 Travis-CI will run test on every push for every ref and build docker image and push to [docker hub](http://hub.docker.io) **ONLY FOR TAGS**
 
 ## Changelog
-
 [Changelog for project](CHANGELOG.md)
 
 ## Roadmap
-
 [Roadmap for project](ROADMAP.md)
 
 ## Authors
-
 * [Konstantin Perminov](https://github.com/SpiLLeR)
 * [Ageev Pavel](https://github.com/insidieux)
+
+## Contributors
+* [Denis Arslanbekov](https://github.com/Arslanbekov)
