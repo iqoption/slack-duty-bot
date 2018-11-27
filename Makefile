@@ -1,6 +1,6 @@
 all: build
 
-.PHONY : all package
+.PHONY: all
 
 # prevent run if docker not found
 ifeq (, $(shell which docker))
@@ -18,17 +18,6 @@ ifeq ($(MOD_NAME),)
 override MOD_NAME=slack-duty-bot
 endif
 
-# vendor variables
-FORCE_INIT=0
-ifeq (,$(wildcard ./go.mod))
-	FORCE_INIT=1
-endif
-
-FORCE_VENDOR=0
-ifeq (,$(wildcard ./vendor/.*))
-	FORCE_VENDOR=1
-endif
-
 # build go binary variables
 GO_VERSION=1.11
 GOOS?=$(shell go env GOOS || echo linux)
@@ -43,24 +32,21 @@ DOCKER_USER?=
 DOCKER_PASSWORD?=
 
 init:
-ifeq ($(FORCE_INIT), 1)
 	docker run --rm \
 		-v ${ROOT_DIR}:/project \
 		-w /project \
 		-e GO111MODULE=on \
 		golang:${GO_VERSION} \
-		go mod init ${MOD_NAME}
-endif
+		go mod init ${MOD_NAME} || true
 
 vendor: init
-ifeq ($(FORCE_VENDOR), 1)
+	rm -r vendor || true
 	docker run --rm \
 		-v ${ROOT_DIR}:/project \
 		-w /project \
 		-e GO111MODULE=on \
 		golang:${GO_VERSION} \
 		go mod vendor
-endif
 
 test: vendor
 	docker run --rm \

@@ -135,7 +135,42 @@ func validateArguments() error {
 	if len(viper.GetStringSlice("slack.keyword")) == 0 {
 		return fmt.Errorf("parameter slack.keyword is required")
 	}
+	var (
+		duties   = parseDutiesList()
+		index    = getCurrentDayIndex()
+		cfgGroup = viper.GetString("slack.group.id") != "" && viper.GetString("slack.group.name") != ""
+		length   = len(duties)
+	)
+	switch length > 0 {
+	case true:
+		if length < 7 {
+			return fmt.Errorf("duties list is not empty, but indexes count %d is less than 7 (weekdays)", length)
+		}
+		if len(duties[index]) == 0 && !cfgGroup {
+			return fmt.Errorf("empty duties list for current day (%d) index and slack.group info does not exist in config", index)
+		}
+		break
+	case false:
+		if !cfgGroup {
+			return fmt.Errorf("empty duties list in config and slack.group info does not exist in config")
+		}
+		break
+	}
 	return nil
+}
+
+func parseDutiesList() [][]string {
+	var (
+		config = struct {
+			Duties [][]string // we need this hack cause viper cannot resolve slice of slice
+		}{}
+	)
+	viper.Unmarshal(&config)
+	return config.Duties
+}
+
+func getCurrentDayIndex() int {
+	return int(time.Now().Weekday())
 }
 
 func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
@@ -158,23 +193,27 @@ func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
 		}
 	}
 	var (
-		config = struct {
-			Duties [][]string // we need this hack cause viper cannot resolve slice of slice
-		}{}
 		duties []string
+		cfg    = parseDutiesList()
+		index  = getCurrentDayIndex()
 	)
-	viper.Unmarshal(&config)
-	for _, username := range config.Duties[int(time.Now().Weekday())] {
-		userId, ok := userIds[username]
-		if !ok {
-			logrus.Errorf("Failed to get user id by username %s", username)
+	if len(cfg) > index {
+		for _, username := range cfg[index] {
+			userId, ok := userIds[username]
+			if !ok {
+				logrus.Errorf("Failed to get user id by username %s", username)
+			}
+			duties = append(duties, fmt.Sprintf("<@%s|%s>", userId, username))
 		}
-		duties = append(duties, fmt.Sprintf("<@%s|%s>", userId, username))
 	}
 	if len(duties) == 0 && viper.GetString("slack.group.id") != "" && viper.GetString("slack.group.name") != "" {
 		duties = append(duties, fmt.Sprintf("<!subteam^%s|@%s>", viper.GetString("slack.group.id"), viper.GetString("slack.group.name")))
 	}
-	// send message
+	if len(duties) == 0 {
+		return fmt.Errorf("failed to collect duties list for incoming message")
+	}
+	logrus.Debugf("Final duties list for call: %+v", duties)
+	//send message
 	var outgoing = rtm.NewOutgoingMessage(strings.Join(duties, ", "), event.Channel)
 	if viper.GetBool("slack.threads") == true {
 		outgoing.ThreadTimestamp = event.Timestamp
@@ -185,8 +224,9 @@ func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
 }
 
 func checkMessageEvent(event *slack.MessageEvent) error {
+	// skip topic messages
 	if event.Topic != "" {
-		return fmt.Errorf("inocming message about topic change")
+		return fmt.Errorf("the incoming message about topic change")
 	}
 	// check text
 	if event.Text == "" {
