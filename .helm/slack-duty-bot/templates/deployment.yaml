@@ -28,16 +28,16 @@ spec:
         - name: SDB_SLACK_TOKEN
           valueFrom:
             secretKeyRef:
-              name: "{{ include "slack-duty-bot.name" . }}-secret"
+              name: "{{ include "slack-duty-bot.fullname" . }}"
               key: token
         volumeMounts:
-        - name: "{{ include "slack-duty-bot.name" . }}-config-volume"
+        - name: "config-volume"
           mountPath: /etc/slack-duty-bot
         resources:
 {{ toYaml .Values.resources | indent 12 }}
       volumes:
-        - name: "{{ include "slack-duty-bot.name" . }}-config-volume"
+        - name: "config-volume"
           configMap:
-            name: "{{ include "slack-duty-bot.name" . }}"
+            name: "{{ include "slack-duty-bot.fullname" . }}"
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
