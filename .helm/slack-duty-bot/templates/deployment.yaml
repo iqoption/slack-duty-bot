@@ -38,6 +38,6 @@ spec:
       volumes:
         - name: "{{ include "slack-duty-bot.name" . }}-config-volume"
           configMap:
-            name: "{{ include "slack-duty-bot.name" . }}-config-map"
+            name: "{{ include "slack-duty-bot.name" . }}"
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
