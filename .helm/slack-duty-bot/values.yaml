@@ -18,13 +18,22 @@ configuration:
   - duty
 
 dutyUsers:
-  sunday: user.one, user.two
-  monday: user.one
-  tuesday: user.two
-  wednesday: user.one
-  thursday: user.two
-  friday: user.one
-  saturday: user.one, user.two
+  sunday:
+    - user.one
+    - user.two
+  monday:
+    - user.one
+  tuesday:
+    - user.two
+  wednesday:
+    - user.one
+  thursday:
+    - user.two
+  friday:
+    - user.one
+  saturday:
+    - user.one
+    - user.two
 
 resources: {}
   # limits:
