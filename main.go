@@ -32,17 +32,20 @@ func (a *slackLogAdapter) Write(b []byte) (int, error) {
 }
 
 func init() {
+	logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true})
+	logrus.SetLevel(logrus.InfoLevel)
+
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("$HOME/.slack-duty-bot")
 	viper.AddConfigPath(".")
 
 	viper.SetEnvPrefix("SDB")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
-	viper.BindEnv("logger.level")
-	viper.BindEnv("slack.token")
-	viper.BindEnv("slack.group.id")
-	viper.BindEnv("slack.group.name")
-	viper.BindEnv("slack.threads")
+	_ = viper.BindEnv("logger.level")
+	_ = viper.BindEnv("slack.token")
+	_ = viper.BindEnv("slack.group.id")
+	_ = viper.BindEnv("slack.group.name")
+	_ = viper.BindEnv("slack.threads")
 	viper.AutomaticEnv()
 
 	pflag.String("logger.level", "info", "Log level")
@@ -53,10 +56,9 @@ func init() {
 	pflag.StringSlice("slack.keyword", []string{}, "Slack keywords to lister")
 	pflag.Bool("slack.threads", true, "Usage of Slack threads to reply on messages")
 
-	viper.BindPFlags(pflag.CommandLine)
-
-	logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true})
-	logrus.SetLevel(logrus.InfoLevel)
+	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
+		logrus.Fatalf("Failed to bind command line arguments: %s", err.Error())
+	}
 }
 
 func main() {
@@ -65,11 +67,14 @@ func main() {
 	if path := viper.GetString("config.path"); path != "" {
 		viper.AddConfigPath(path)
 	}
-	viper.ReadInConfig()
+
+	if err := viper.ReadInConfig(); err != nil {
+		logrus.Fatalf("Failed to read config file: %s", err.Error())
+	}
 
 	err := reloader.Watch(filepath.Dir(viper.ConfigFileUsed()), watcherFunc, 5*time.Second)
 	if err != nil {
-		logrus.Fatalf("Failed to init config watcher: %+v", err)
+		logrus.Fatalf("Failed to init config watcher: %s", err.Error())
 	}
 
 	if level, err := logrus.ParseLevel(viper.GetString("logger.level")); err == nil {
@@ -77,18 +82,21 @@ func main() {
 	}
 
 	if err := validateArguments(); err != nil {
-		logrus.Fatalf("Validation arguments error: %+v", err)
+		logrus.Fatalf("Validation arguments error: %s", err.Error())
 	}
 
-	client := slack.New(viper.GetString("slack.token"))
+	var slackOptions = make([]slack.Option, 0)
 	if logrus.GetLevel() == logrus.DebugLevel {
-		client.SetDebug(true)
-		slack.SetLogger(log.New(&slackLogAdapter{
+		slackOptions = append(slackOptions, slack.OptionDebug(true))
+		slackOptions = append(slackOptions, slack.OptionLog(log.New(&slackLogAdapter{
 			entry: logrus.StandardLogger().WithField("CONTEXT", "slack"),
-		}, "", 0))
+		}, "", 0)))
 	}
 
-	slackRTM := client.NewRTM()
+	var (
+		client   = slack.New(viper.GetString("slack.token"), slackOptions...)
+		slackRTM = client.NewRTM()
+	)
 
 	logrus.Infoln("Send request for RTM connection")
 	go slackRTM.ManageConnection()
@@ -100,30 +108,38 @@ func main() {
 		switch event := packet.Data.(type) {
 		case *slack.ConnectedEvent:
 			logrus.Infoln("RTM connection established")
+			break
 
 		case *slack.InvalidAuthEvent:
-			slackRTM.Disconnect()
+			if err := slackRTM.Disconnect(); err != nil {
+				logrus.Errorln("Failed to disconnect from RTM")
+			}
 			logrus.Fatalln("Could not authenticate, invalid Slack token passed, terminate")
+			break
 
 		case *slack.IncomingEventError:
 			incomingErrorCount++
-			logrus.Errorf("RTM incoming error: %+v", event.Error())
+			logrus.Errorf("RTM incoming error: %s", event.Error())
 			if incomingErrorCount >= incomingErrorRetry {
-				slackRTM.Disconnect()
+				if err := slackRTM.Disconnect(); err != nil {
+					logrus.Errorln("Failed to disconnect from RTM")
+				}
 				logrus.Fatalf("Reached error reconnect limit %d on %s type error, terminate", incomingErrorRetry, packet.Type)
 			}
+			break
 
 		case *slack.MessageEvent:
 			if err := handleMessageEvent(slackRTM, event); err != nil {
-				logrus.Errorf("Handle message event error: %v", err)
+				logrus.Errorf("Handle message event error: %s", err.Error())
 			}
+			break
 		}
 	}
 }
 
 func watcherFunc() {
 	if err := viper.ReadInConfig(); err != nil {
-		logrus.Errorf("Failed to update config on fs event: %+v", err)
+		logrus.Errorf("Failed to update config on fs event: %s", err.Error())
 	}
 	logrus.Infoln("Config updated on fs event")
 }
@@ -165,7 +181,7 @@ func parseDutiesList() [][]string {
 			Duties [][]string // we need this hack cause viper cannot resolve slice of slice
 		}{}
 	)
-	viper.Unmarshal(&config)
+	_ = viper.Unmarshal(&config)
 	return config.Duties
 }
 
@@ -175,7 +191,7 @@ func getCurrentDayIndex() int {
 
 func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
 	if err := checkMessageEvent(event); err != nil {
-		logrus.Debugf("Incoming message check error: %+v", err)
+		logrus.Debugf("Incoming message check error: %s", err.Error())
 		return nil
 	}
 
@@ -185,7 +201,7 @@ func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
 	var userIds = make(map[string]string, 0)
 	users, err := rtm.Client.GetUsers()
 	if err != nil {
-		logrus.Errorf("Failed to get users list from Slack API: %v", err)
+		logrus.Errorf("Failed to get users list from Slack API: %s", err.Error())
 	}
 	if users != nil {
 		for _, user := range users {
@@ -213,13 +229,16 @@ func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
 		return fmt.Errorf("failed to collect duties list for incoming message")
 	}
 	logrus.Debugf("Final duties list for call: %+v", duties)
+
 	//send message
-	var outgoing = rtm.NewOutgoingMessage(strings.Join(duties, ", "), event.Channel)
+	var rtmOptions = make([]slack.RTMsgOption, 0)
 	if viper.GetBool("slack.threads") == true {
-		outgoing.ThreadTimestamp = event.Timestamp
+		rtmOptions = append(rtmOptions, slack.RTMsgOptionTS(event.Timestamp))
 	}
-	logrus.Debugf("Outgoing message: %+v", outgoing)
-	rtm.SendMessage(outgoing)
+	var outgoingMessage = rtm.NewOutgoingMessage(strings.Join(duties, ", "), event.Channel, rtmOptions...)
+	logrus.Debugf("Outgoing message: %+v", outgoingMessage)
+
+	rtm.SendMessage(outgoingMessage)
 	return nil
 }
 
