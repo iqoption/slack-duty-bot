@@ -233,7 +233,14 @@ func handleMessageEvent(rtm *slack.RTM, event *slack.MessageEvent) error {
 	//send message
 	var rtmOptions = make([]slack.RTMsgOption, 0)
 	if viper.GetBool("slack.threads") == true {
-		rtmOptions = append(rtmOptions, slack.RTMsgOptionTS(event.Timestamp))
+		var (
+			optionTS = event.Timestamp
+		)
+		// message already in timestamp
+		if event.ThreadTimestamp != `` {
+			optionTS = event.ThreadTimestamp
+		}
+		rtmOptions = append(rtmOptions, slack.RTMsgOptionTS(optionTS))
 	}
 	var outgoingMessage = rtm.NewOutgoingMessage(strings.Join(duties, ", "), event.Channel, rtmOptions...)
 	logrus.Debugf("Outgoing message: %+v", outgoingMessage)

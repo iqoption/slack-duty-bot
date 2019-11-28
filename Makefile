@@ -5,7 +5,7 @@ endif
 
 override APP_NAME=slack-duty-bot
 override MOD_NAME=github.com/insidieux/${APP_NAME}
-override GO_VERSION=1.12
+override GO_VERSION=1.13
 override CGO_ENABLED=0
 
 # build go binary variables
